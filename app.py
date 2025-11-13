@@ -5,15 +5,19 @@ import base64
 import numpy as np
 from PIL import Image
 import os
+from pyngrok import ngrok
+import threading
 
 app = Flask(__name__)
+
+# Load YOLO model once
 model = YOLO("best.pt")  # make sure 'best.pt' is in the same folder
 
+# ---------- Routes ----------
 
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Braille YOLO API is running."})
-
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -43,7 +47,7 @@ def predict():
         for l in letters:
             if not any(
                 max(0, min(l['x2'], f['x2']) - max(l['x1'], f['x1'])) *
-                max(0, min(l['y2'], f['y2']) - max(l['y1'], f['y1'])) /
+                max(0, min(l['y2'], f['y2']) - max(l['y1'], f['y1'])) / 
                 min((l['x2']-l['x1'])*(l['y2']-l['y1']), (f['x2']-f['x1'])*(f['y2']-f['y1'])) > 0.5
                 for f in filtered
             ):
@@ -95,7 +99,6 @@ def predict():
         "result_image": img_b64
     })
 
-
 @app.route("/predict_realtime", methods=["POST"])
 def predict_realtime():
     """Handles frame-by-frame real-time prediction."""
@@ -126,7 +129,13 @@ def predict_realtime():
         "predicted_text": text
     })
 
+# ---------- ngrok ----------
+def start_ngrok():
+    url = ngrok.connect(5000)
+    print(" * ngrok tunnel URL:", url)
 
+# ---------- Main ----------
 if __name__ == "__main__":
+    threading.Thread(target=start_ngrok, daemon=True).start()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
