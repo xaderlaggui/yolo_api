@@ -20,13 +20,20 @@ def home():
 @app.route("/predict", methods=["POST"])
 def predict():
     """Handles single image uploads (camera or gallery)."""
+    print("=" * 50)
+    print("PREDICT ENDPOINT CALLED")
+    print("=" * 50)
     try:
         if "image" not in request.files:
+            print("ERROR: No image in request")
             return jsonify({"error": "No image uploaded"}), 400
 
         file = request.files["image"]
+        print(f"Image received: {file.filename}, size: {file.content_length}")
         image = Image.open(file.stream).convert("RGB")
+        print("Image opened successfully, starting prediction...")
         results = model.predict(image, save=True, conf=0.1)
+        print("Prediction completed!")
 
         boxes = results[0].boxes
         letters = []
